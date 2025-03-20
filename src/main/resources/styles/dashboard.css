@@ -1,0 +1,92 @@
+.table-view {
+    -fx-pref-width: 800px;
+    -fx-pref-height: 400px;
+}
+
+.table-view .column-header {
+    font-size: 14px;
+    -fx-font-size: 14px;
+    font-weight: bold;
+    -fx-font-weight: bold;
+    padding: 8px;
+    -fx-padding: 8px;
+    background-color: #f8f9fa;
+    -fx-background-color: #f8f9fa;
+    border-color: #dee2e6;
+    -fx-border-color: #dee2e6;
+}
+
+.table-view .table-row-cell {
+    padding: 8px;
+    -fx-padding: 8px;
+}
+
+.table-view .table-row-cell:odd {
+    background-color: #f8f9fa;
+    -fx-background-color: #f8f9fa;
+}
+
+.table-view .table-row-cell:selected {
+    background-color: #e9ecef;
+    -fx-background-color: #e9ecef;
+}
+
+.date-picker {
+    -fx-pref-width: 200px;
+}
+
+.date-picker .text-field {
+    font-size: 14px;
+    -fx-font-size: 14px;
+    padding: 5px;
+    -fx-padding: 5px;
+}
+
+.combo-box {
+    -fx-pref-width: 200px;
+    font-size: 14px;
+    -fx-font-size: 14px;
+    padding: 5px;
+    -fx-padding: 5px;
+}
+
+.text-area {
+    -fx-pref-width: 400px;
+    -fx-pref-height: 100px;
+    font-size: 14px;
+    -fx-font-size: 14px;
+    padding: 5px;
+    -fx-padding: 5px;
+}
+
+.button {
+    font-size: 14px;
+    -fx-font-size: 14px;
+    padding: 8px 16px;
+    -fx-padding: 8px 16px;
+    background-color: #007bff;
+    -fx-background-color: #007bff;
+    -fx-text-fill: white;
+    -fx-background-radius: 4px;
+}
+
+.button:hover {
+    background-color: #0056b3;
+    -fx-background-color: #0056b3;
+}
+
+.error-label {
+    -fx-text-fill: #dc3545;
+    font-size: 12px;
+    -fx-font-size: 12px;
+    padding: 5px 0;
+    -fx-padding: 5px 0;
+}
+
+.success-label {
+    -fx-text-fill: #28a745;
+    font-size: 12px;
+    -fx-font-size: 12px;
+    padding: 5px 0;
+    -fx-padding: 5px 0;
+}

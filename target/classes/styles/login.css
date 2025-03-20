@@ -1,0 +1,150 @@
+.root {
+    background-color: #f4f4f4;
+    -fx-background-color: #f5f5f5;
+    font-size: 12px;
+    -fx-font-size: 12px;
+    font-family: "Segoe UI";
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.title-label {
+    font-size: 24px;
+    -fx-font-size: 24px;
+    font-weight: bold;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+    -fx-padding: 20px;
+}
+
+.input-field {
+    padding: 10px;
+    -fx-padding: 5px 10px;
+    border-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+    border-color: #cccccc;
+    -fx-border-color: #bdc3c7;
+    border-width: 1px;
+    -fx-border-width: 1px;
+    -fx-pref-width: 250px;
+    -fx-pref-height: 35px;
+    -fx-font-size: 14px;
+}
+
+.input-field:focused {
+    border-color: #4CAF50;
+    -fx-border-color: #3498db;
+    -fx-border-width: 2px;
+}
+
+.role-combo {
+    -fx-pref-width: 250px;
+    padding: 8px;
+    -fx-padding: 5px 10px;
+    border-radius: 4px;
+    -fx-border-radius: 5px;
+    border-color: #bdc3c7;
+    -fx-border-color: #bdc3c7;
+    border-width: 1px;
+    -fx-border-width: 1px;
+    -fx-pref-height: 35px;
+    -fx-font-size: 14px;
+    -fx-background-radius: 5px;
+}
+
+.role-combo:focused {
+    -fx-border-color: #3498db;
+    -fx-border-width: 2px;
+}
+
+.action-button {
+    padding: 10px 20px;
+    -fx-padding: 0;
+    border-radius: 5px;
+    -fx-border-radius: 5px;
+    border-color: #4CAF50;
+    -fx-border-color: #3498db;
+    border-width: 1px;
+    -fx-border-width: 0;
+    background-color: #3498db;
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    font-weight: bold;
+    -fx-font-weight: bold;
+    cursor: pointer;
+    -fx-cursor: hand;
+    -fx-pref-width: 120px;
+    -fx-pref-height: 35px;
+    -fx-font-size: 14px;
+}
+
+.action-button:hover {
+    background-color: #2980b9;
+    -fx-background-color: #2980b9;
+}
+
+.action-button:pressed {
+    -fx-background-color: #2471a3;
+}
+
+.message-label {
+    border-radius: 4px;
+    -fx-border-radius: 0;
+    border-color: #bdc3c7;
+    -fx-border-color: transparent;
+    border-width: 1px;
+    -fx-border-width: 0;
+    -fx-text-fill: #e74c3c;
+    font-size: 14px;
+    -fx-font-size: 14px;
+    -fx-padding: 10px;
+    -fx-wrap-text: true;
+    -fx-pref-width: 250px;
+    -fx-alignment: center;
+}
+
+.admin-menu {
+    background-color: transparent;
+    -fx-background-color: transparent;
+    font-size: 18px;
+    -fx-font-size: 18px;
+    padding: 5px;
+    -fx-padding: 5px;
+    cursor: pointer;
+    -fx-cursor: hand;
+}
+
+.admin-menu:hover {
+    background-color: #f0f0f0;
+    -fx-background-color: #f0f0f0;
+}
+
+.admin-menu .context-menu {
+    background-color: white;
+    -fx-background-color: white;
+    border-color: #bdc3c7;
+    -fx-border-color: #bdc3c7;
+    border-width: 1px;
+    -fx-border-width: 1px;
+}
+
+.admin-menu .menu-item:hover {
+    background-color: #f0f0f0;
+    -fx-background-color: #f0f0f0;
+}
+
+.hamburger-button {
+    -fx-font-size: 20px;
+    -fx-background-color: transparent;
+    -fx-text-fill: #2c3e50;
+    -fx-padding: 5px 10px;
+    -fx-cursor: hand;
+}
+
+.hamburger-button:hover {
+    -fx-text-fill: #3498db;
+}
+
+.hamburger-button:pressed {
+    -fx-text-fill: #2980b9;
+}
