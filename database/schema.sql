@@ -19,10 +19,19 @@ CREATE TABLE IF NOT EXISTS courses (
     FOREIGN KEY (created_by) REFERENCES users(username)
 );
 
+-- Create teacher_courses table
+CREATE TABLE IF NOT EXISTS teacher_courses (
+    teacher_id INTEGER NOT NULL,
+    course_code VARCHAR(10) NOT NULL,
+    PRIMARY KEY (course_code),
+    FOREIGN KEY (teacher_id) REFERENCES users(id),
+    FOREIGN KEY (course_code) REFERENCES courses(code)
+);
+
 -- Create student_courses table
 CREATE TABLE IF NOT EXISTS student_courses (
-    student_id INT,
-    course_code VARCHAR(10),
+    student_id INTEGER NOT NULL,
+    course_code VARCHAR(10) NOT NULL,
     grade VARCHAR(2),
     PRIMARY KEY (student_id, course_code),
     FOREIGN KEY (student_id) REFERENCES users(id),
@@ -31,11 +40,11 @@ CREATE TABLE IF NOT EXISTS student_courses (
 
 -- Create attendance table
 CREATE TABLE IF NOT EXISTS attendance (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    student_id INT,
-    course_code VARCHAR(10),
-    date DATE,
-    status ENUM('Present', 'Absent', 'Late') NOT NULL,
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    student_id INTEGER NOT NULL,
+    course_code VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
+    status VARCHAR(10) NOT NULL,
     FOREIGN KEY (student_id) REFERENCES users(id),
     FOREIGN KEY (course_code) REFERENCES courses(code)
 );

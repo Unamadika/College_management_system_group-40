@@ -7,19 +7,22 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.scene.shape.SVGPath;
+import javafx.animation.FadeTransition;
+import javafx.util.Duration;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import java.sql.*;
 
 public class LoginView {
-    private VBox root;
+    private StackPane root;
+    private VBox contentRoot;
     private TextField usernameField;
     private PasswordField passwordField;
     private ComboBox<String> roleComboBox;
     private Label messageLabel;
     private Button loginButton;
-    private Button registerButton;
+    private MenuButton adminMenuButton;
 
     private static final String ADMIN_USERNAME = "admin";
     private static final String ADMIN_PASSWORD = "admin123";
@@ -34,308 +37,309 @@ public class LoginView {
     }
 
     private void createView() {
-        root = new VBox(15);
-        root.setAlignment(Pos.CENTER);
-        root.setPadding(new Insets(20));
-        root.setPrefSize(800, 600);
-        root.getStyleClass().add("login-container");
+        // Create main root with background
+        root = new StackPane();
+        root.setPrefSize(1920, 1080);
+        root.setMinSize(1920, 1080);
+        root.setMaxSize(1920, 1080);
 
-        // Create hamburger menu
-        MenuButton hamburgerMenu = createHamburgerMenu();
-        hamburgerMenu.getStyleClass().add("hamburger-menu");
+        // Create admin menu button
+        adminMenuButton = new MenuButton("☰");
+        adminMenuButton.getStyleClass().add("hamburger-button");
+        MenuItem adminLoginItem = new MenuItem("Admin Login");
+        adminLoginItem.setOnAction(e -> showAdminLogin());
+        adminMenuButton.getItems().add(adminLoginItem);
 
-        // Top bar with hamburger
-        HBox topBar = new HBox(hamburgerMenu);
-        topBar.setPadding(new Insets(10));
-        topBar.setAlignment(Pos.CENTER_LEFT);
+        // Position admin menu in top-left corner
+        StackPane.setAlignment(adminMenuButton, Pos.TOP_LEFT);
+        StackPane.setMargin(adminMenuButton, new Insets(20));
 
+        // Load and set background image
+        try {
+            Image backgroundImage = new Image(getClass().getResourceAsStream("/images/image1.jpeg"), 1920, 1080, true, true);
+            ImageView backgroundView = new ImageView(backgroundImage);
+            backgroundView.setFitWidth(1920);
+            backgroundView.setFitHeight(1080);
+            backgroundView.setPreserveRatio(false);
+            backgroundView.setSmooth(true);
+            root.getChildren().add(backgroundView);
+        } catch (Exception e) {
+            System.err.println("Error loading background image: " + e.getMessage());
+        }
+
+        // Create content root for form
+        contentRoot = new VBox();
+        contentRoot.setAlignment(Pos.CENTER);
+        contentRoot.getStyleClass().add("login-container");
+
+        // Create form container
+        VBox formContainer = new VBox(25);
+        formContainer.getStyleClass().add("form-container");
+        formContainer.setAlignment(Pos.CENTER);
+        formContainer.setMaxSize(450, 600);
+
+        // Title with icon
         Label titleLabel = new Label("College Management System");
         titleLabel.getStyleClass().add("title-label");
+        titleLabel.setWrapText(true);
+        titleLabel.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
 
+        // Create fields container
+        VBox fieldsContainer = new VBox(20);
+        fieldsContainer.setAlignment(Pos.CENTER);
+        fieldsContainer.setMaxWidth(400);
+
+        // Username field with icon
+        HBox usernameBox = new HBox(15);
+        usernameBox.setAlignment(Pos.CENTER);
+        Label userIcon = new Label("👤");
+        userIcon.getStyleClass().add("field-icon");
         usernameField = new TextField();
         usernameField.setPromptText("Username");
-        usernameField.setMaxWidth(300);
+        usernameField.setPrefWidth(300);
         usernameField.getStyleClass().add("input-field");
+        usernameBox.getChildren().addAll(userIcon, usernameField);
 
+        // Password field with icon
+        HBox passwordBox = new HBox(15);
+        passwordBox.setAlignment(Pos.CENTER);
+        Label lockIcon = new Label("🔒");
+        lockIcon.getStyleClass().add("field-icon");
         passwordField = new PasswordField();
         passwordField.setPromptText("Password");
-        passwordField.setMaxWidth(300);
+        passwordField.setPrefWidth(300);
         passwordField.getStyleClass().add("input-field");
+        passwordBox.getChildren().addAll(lockIcon, passwordField);
 
+        // Role selection with icon
+        HBox roleBox = new HBox(15);
+        roleBox.setAlignment(Pos.CENTER);
+        Label roleIcon = new Label("👥");
+        roleIcon.getStyleClass().add("field-icon");
         roleComboBox = new ComboBox<>();
         roleComboBox.getItems().addAll("Student", "Teacher");
         roleComboBox.setValue("Student");
-        roleComboBox.setMaxWidth(300);
-        roleComboBox.getStyleClass().add("role-combo");
+        roleComboBox.setPrefWidth(300);
+        roleComboBox.getStyleClass().add("input-field");
+        roleBox.getChildren().addAll(roleIcon, roleComboBox);
 
+        fieldsContainer.getChildren().addAll(usernameBox, passwordBox, roleBox);
+
+        // Login button
         loginButton = new Button("Login");
-        loginButton.setMaxWidth(300);
-        loginButton.getStyleClass().add("login-button");
-
-        registerButton = new Button("Register");
-        registerButton.setMaxWidth(300);
-        registerButton.getStyleClass().add("register-button");
+        loginButton.setPrefWidth(300);
+        loginButton.getStyleClass().addAll("login-button", "primary-button");
 
         messageLabel = new Label();
         messageLabel.getStyleClass().add("message-label");
+        messageLabel.setWrapText(true);
+        messageLabel.setAlignment(Pos.CENTER);
+        messageLabel.setMaxWidth(350);
 
-        VBox contentBox = new VBox(15);
-        contentBox.setAlignment(Pos.CENTER);
-        contentBox.getChildren().addAll(
+        formContainer.getChildren().addAll(
             titleLabel,
-            new Label("Username:"),
-            usernameField,
-            new Label("Password:"),
-            passwordField,
-            new Label("Role:"),
-            roleComboBox,
+            fieldsContainer,
             loginButton,
-            registerButton,
             messageLabel
         );
 
-        root.getChildren().addAll(topBar, contentBox);
-    }
-
-    private MenuButton createHamburgerMenu() {
-        // Create hamburger icon using SVG
-        SVGPath hamburgerIcon = new SVGPath();
-        hamburgerIcon.setContent("M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z");
-        hamburgerIcon.setScaleX(0.8);
-        hamburgerIcon.setScaleY(0.8);
-
-        MenuButton menuButton = new MenuButton();
-        menuButton.setGraphic(hamburgerIcon);
+        // Add form to content root
+        contentRoot.getChildren().add(formContainer);
         
-        MenuItem adminLoginItem = new MenuItem("Admin Login");
-        adminLoginItem.setOnAction(e -> handleAdminLogin());
+        // Add content root and admin menu to main root
+        root.getChildren().addAll(contentRoot, adminMenuButton);
+    }
+
+    private void showAdminLogin() {
+        // Create admin login dialog
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Admin Login");
+        dialog.setHeaderText(null);
         
-        menuButton.getItems().add(adminLoginItem);
-        return menuButton;
-    }
-
-    private void setupEventHandlers() {
-        loginButton.setOnAction(e -> handleLogin());
-        registerButton.setOnAction(e -> handleRegister());
-        usernameField.setOnAction(e -> handleLogin());
-        passwordField.setOnAction(e -> handleLogin());
-    }
-
-    private void handleRegister() {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("Register New User");
-
-        VBox content = new VBox(10);
-        content.setAlignment(Pos.CENTER);
+        // Get the dialog pane and add styling
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.getStylesheets().add(getClass().getResource("/styles/login.css").toExternalForm());
+        dialogPane.getStyleClass().add("admin-dialog");
+        
+        // Create the content
+        VBox content = new VBox(15);
         content.setPadding(new Insets(20));
-        content.setMinWidth(300);
-        content.setMaxWidth(300);
+        content.setMaxWidth(400);
+        content.getStyleClass().add("admin-login-content");
 
-        TextField regUsername = new TextField();
-        regUsername.setPromptText("Username");
-        regUsername.setPrefWidth(200);
+        // Username field with icon
+        HBox usernameBox = new HBox(10);
+        usernameBox.setAlignment(Pos.CENTER_LEFT);
+        Label userIcon = new Label("👤");
+        userIcon.getStyleClass().add("field-icon");
+        TextField adminUsername = new TextField();
+        adminUsername.setPromptText("Admin Username");
+        adminUsername.setPrefWidth(300);
+        adminUsername.getStyleClass().add("input-field");
+        usernameBox.getChildren().addAll(userIcon, adminUsername);
 
-        PasswordField regPassword = new PasswordField();
-        regPassword.setPromptText("Password");
-        regPassword.setPrefWidth(200);
+        // Password field with icon
+        HBox passwordBox = new HBox(10);
+        passwordBox.setAlignment(Pos.CENTER_LEFT);
+        Label lockIcon = new Label("🔒");
+        lockIcon.getStyleClass().add("field-icon");
+        PasswordField adminPassword = new PasswordField();
+        adminPassword.setPromptText("Admin Password");
+        adminPassword.setPrefWidth(300);
+        adminPassword.getStyleClass().add("input-field");
+        passwordBox.getChildren().addAll(lockIcon, adminPassword);
 
-        PasswordField confirmPassword = new PasswordField();
-        confirmPassword.setPromptText("Confirm Password");
-        confirmPassword.setPrefWidth(200);
+        Label titleLabel = new Label("Admin Login");
+        titleLabel.getStyleClass().add("title-label");
 
-        ComboBox<String> regRole = new ComboBox<>();
-        regRole.getItems().addAll("Student", "Teacher");
-        regRole.setValue("Student");
-        regRole.setPrefWidth(200);
+        content.getChildren().addAll(
+            titleLabel,
+            usernameBox,
+            passwordBox
+        );
 
-        Button registerBtn = new Button("Register");
-        registerBtn.setPrefWidth(200);
-        registerBtn.getStyleClass().add("action-button");
+        dialogPane.setContent(content);
+        dialogPane.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
 
-        Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: red;");
-        errorLabel.setWrapText(true);
+        // Style the buttons
+        Button okButton = (Button) dialogPane.lookupButton(ButtonType.OK);
+        okButton.getStyleClass().addAll("login-button", "primary-button");
+        okButton.setText("Login");
+        
+        Button cancelButton = (Button) dialogPane.lookupButton(ButtonType.CANCEL);
+        cancelButton.getStyleClass().addAll("login-button", "secondary-button");
 
-        registerBtn.setOnAction(e -> {
-            String username = regUsername.getText().trim();
-            String password = regPassword.getText();
-            String confirm = confirmPassword.getText();
-            String role = regRole.getValue();
-
-            if (username.isEmpty() || password.isEmpty() || confirm.isEmpty()) {
-                errorLabel.setText("Please fill in all fields");
-                return;
-            }
-
-            if (!password.equals(confirm)) {
-                errorLabel.setText("Passwords do not match");
-                return;
-            }
-
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                // Check if username already exists
-                String checkQuery = "SELECT username FROM users WHERE username = ?";
-                PreparedStatement checkStmt = conn.prepareStatement(checkQuery);
-                checkStmt.setString(1, username);
-                ResultSet rs = checkStmt.executeQuery();
-
-                if (rs.next()) {
-                    errorLabel.setText("Username already exists");
-                    return;
-                }
-
-                // Insert new user
-                String insertQuery = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
-                PreparedStatement insertStmt = conn.prepareStatement(insertQuery);
-                insertStmt.setString(1, username);
-                insertStmt.setString(2, password);
-                insertStmt.setString(3, role);
-                insertStmt.executeUpdate();
-
+        // Add enter key handler
+        adminPassword.setOnAction(e -> {
+            if (adminUsername.getText().equals(ADMIN_USERNAME) && 
+                adminPassword.getText().equals(ADMIN_PASSWORD)) {
+                dialog.setResult(ButtonType.OK);
                 dialog.close();
-                messageLabel.setText("Registration successful! Please login.");
-                messageLabel.setStyle("-fx-text-fill: green;");
-
-            } catch (SQLException ex) {
-                errorLabel.setText("Error during registration: " + ex.getMessage());
+                openDashboard("Admin", ADMIN_USERNAME);
+            } else {
+                showError("Invalid admin credentials");
             }
         });
 
-        content.getChildren().addAll(
-            new Label("Register New User"),
-            new Label("Username:"),
-            regUsername,
-            new Label("Password:"),
-            regPassword,
-            new Label("Confirm Password:"),
-            confirmPassword,
-            new Label("Role:"),
-            regRole,
-            registerBtn,
-            errorLabel
-        );
+        // Handle the result
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == ButtonType.OK) {
+                if (adminUsername.getText().equals(ADMIN_USERNAME) && 
+                    adminPassword.getText().equals(ADMIN_PASSWORD)) {
+                    openDashboard("Admin", ADMIN_USERNAME);
+                } else {
+                    showError("Invalid admin credentials");
+                }
+            }
+            return dialogButton;
+        });
 
-        Scene scene = new Scene(content);
-        scene.getStylesheets().add(getClass().getResource("/styles/login.css").toExternalForm());
-        
-        dialog.setScene(scene);
         dialog.showAndWait();
     }
 
     private void handleLogin() {
-        String username = usernameField.getText().trim();
+        String username = usernameField.getText();
         String password = passwordField.getText();
         String role = roleComboBox.getValue();
 
         if (username.isEmpty() || password.isEmpty()) {
-            messageLabel.setText("Please enter both username and password");
-            messageLabel.setStyle("-fx-text-fill: red;");
+            showError("Please fill in all fields");
             return;
         }
 
+        // Try to login
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String query = "SELECT id, username, role FROM users WHERE username = ? AND password = ? AND role = ?";
-            PreparedStatement stmt = conn.prepareStatement(query);
+            PreparedStatement stmt = conn.prepareStatement(
+                "SELECT * FROM users WHERE username = ? AND password = ? AND role = ?"
+            );
             stmt.setString(1, username);
             stmt.setString(2, password);
             stmt.setString(3, role);
 
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
+                showSuccess("Login successful!");
                 openDashboard(role, username);
             } else {
-                messageLabel.setText("Invalid credentials");
-                messageLabel.setStyle("-fx-text-fill: red;");
+                showError("Invalid credentials");
             }
-        } catch (Exception e) {
-            messageLabel.setText("Database error: " + e.getMessage());
-            messageLabel.setStyle("-fx-text-fill: red;");
+        } catch (SQLException e) {
+            showError("Error during login: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    private void handleAdminLogin() {
-        Stage dialog = new Stage();
-        dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle("Admin Login");
+    private void showSuccess(String message) {
+        messageLabel.setText(message);
+        messageLabel.getStyleClass().removeAll("error-label", "success-label");
+        messageLabel.getStyleClass().add("success-label");
+    }
 
-        VBox content = new VBox(10);
-        content.setAlignment(Pos.CENTER);
-        content.setPadding(new Insets(20));
-        content.setMinWidth(300);
-        content.setMaxWidth(300);
-
-        TextField adminUsername = new TextField();
-        adminUsername.setPromptText("Admin Username");
-        adminUsername.setPrefWidth(200);
-
-        PasswordField adminPassword = new PasswordField();
-        adminPassword.setPromptText("Admin Password");
-        adminPassword.setPrefWidth(200);
-
-        Button loginBtn = new Button("Login");
-        loginBtn.setPrefWidth(200);
-        loginBtn.getStyleClass().add("action-button");
-
-        Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: red;");
-        errorLabel.setWrapText(true);
-
-        loginBtn.setOnAction(e -> {
-            if (adminUsername.getText().equals(ADMIN_USERNAME) && 
-                adminPassword.getText().equals(ADMIN_PASSWORD)) {
-                dialog.close();
-                openDashboard("Admin", adminUsername.getText());
-            } else {
-                errorLabel.setText("Invalid admin credentials");
-            }
-        });
-
-        content.getChildren().addAll(
-            new Label("Admin Login"),
-            new Label("Username:"),
-            adminUsername,
-            new Label("Password:"),
-            adminPassword,
-            loginBtn,
-            errorLabel
-        );
-
-        Scene scene = new Scene(content);
-        scene.getStylesheets().add(getClass().getResource("/styles/login.css").toExternalForm());
-        
-        dialog.setScene(scene);
-        dialog.showAndWait();
+    private void showError(String message) {
+        messageLabel.setText(message);
+        messageLabel.getStyleClass().removeAll("error-label", "success-label");
+        messageLabel.getStyleClass().add("error-label");
     }
 
     private void openDashboard(String role, String username) {
         try {
-            Parent dashboard;
-            switch (role) {
-                case "Admin":
-                    dashboard = new AdminDashboardView(username).getView();
-                    break;
-                case "Teacher":
-                    dashboard = new TeacherDashboardView(username).getView();
-                    break;
-                case "Student":
-                    dashboard = new StudentDashboardView(username).getView();
-                    break;
-                default:
-                    throw new IllegalArgumentException("Invalid role");
-            }
+            // Create fade out transition
+            FadeTransition fadeOut = new FadeTransition(Duration.millis(500), root);
+            fadeOut.setFromValue(1.0);
+            fadeOut.setToValue(0.0);
 
-            Scene scene = new Scene(dashboard, 1024, 768);
-            scene.getStylesheets().add(getClass().getResource("/styles/dashboard.css").toExternalForm());
+            fadeOut.setOnFinished(e -> {
+                try {
+                    Parent dashboard;
+                    Stage stage = (Stage) root.getScene().getWindow();
+                    
+                    switch (role) {
+                        case "Admin":
+                            AdminDashboardView adminView = new AdminDashboardView(username);
+                            dashboard = adminView.getView();
+                            break;
+                        case "Teacher":
+                            TeacherDashboardView teacherView = new TeacherDashboardView(username);
+                            dashboard = teacherView.getView();
+                            break;
+                        case "Student":
+                            StudentDashboardView studentView = new StudentDashboardView(username);
+                            dashboard = studentView.getView();
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Invalid role");
+                    }
 
-            Stage stage = (Stage) root.getScene().getWindow();
-            stage.setScene(scene);
-            stage.setResizable(true);
-            stage.centerOnScreen();
+                    Scene scene = new Scene(dashboard, 1920, 1080);
+                    scene.getStylesheets().add(getClass().getResource("/styles/dashboard.css").toExternalForm());
+                    
+                    // Create fade in transition for new scene
+                    FadeTransition fadeIn = new FadeTransition(Duration.millis(500), dashboard);
+                    fadeIn.setFromValue(0.0);
+                    fadeIn.setToValue(1.0);
+                    
+                    stage.setScene(scene);
+                    fadeIn.play();
+
+                } catch (Exception ex) {
+                    showError("Error opening dashboard: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            });
+
+            fadeOut.play();
 
         } catch (Exception e) {
-            messageLabel.setText("Error opening dashboard: " + e.getMessage());
-            messageLabel.setStyle("-fx-text-fill: red;");
+            showError("Error opening dashboard: " + e.getMessage());
+            e.printStackTrace();
         }
+    }
+
+    private void setupEventHandlers() {
+        loginButton.setOnAction(e -> handleLogin());
+
+        // Add enter key handlers for main login
+        usernameField.setOnAction(e -> passwordField.requestFocus());
+        passwordField.setOnAction(e -> handleLogin());
     }
 }

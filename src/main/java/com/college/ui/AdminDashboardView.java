@@ -21,6 +21,7 @@ public class AdminDashboardView extends BaseDashboardView {
     private TextField courseCodeField;
     private TextField courseNameField;
     private TextArea courseDescField;
+    private ComboBox<String> teacherComboBox;
 
     public AdminDashboardView(String username) {
         super(username);
@@ -241,6 +242,26 @@ public class AdminDashboardView extends BaseDashboardView {
         courseDescField.setMaxWidth(300);
         courseDescField.setPrefRowCount(3);
 
+        // Teacher selection
+        teacherComboBox = new ComboBox<>();
+        teacherComboBox.setPromptText("Select Teacher");
+        teacherComboBox.setMaxWidth(300);
+        loadTeachers();
+
+        // Student enrollment section
+        Label enrollmentLabel = new Label("Enroll Students");
+        enrollmentLabel.getStyleClass().add("section-label");
+
+        ComboBox<String> studentComboBox = new ComboBox<>();
+        studentComboBox.setPromptText("Select Student");
+        studentComboBox.setMaxWidth(300);
+        loadAvailableStudents(studentComboBox);
+
+        Button enrollStudentBtn = new Button("Enroll Student");
+        enrollStudentBtn.setMaxWidth(300);
+        enrollStudentBtn.getStyleClass().add("action-button");
+
+        // Course management buttons
         Button addCourseBtn = new Button("Add Course");
         addCourseBtn.setMaxWidth(300);
 
@@ -262,121 +283,74 @@ public class AdminDashboardView extends BaseDashboardView {
         TableColumn<Course, String> descriptionCol = new TableColumn<>("Description");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
 
-        courseTable.getColumns().addAll(Arrays.asList(codeCol, nameCol, descriptionCol));
+        TableColumn<Course, String> teacherCol = new TableColumn<>("Assigned Teacher");
+        teacherCol.setCellValueFactory(new PropertyValueFactory<>("teacher"));
 
-        // Add course button action
-        addCourseBtn.setOnAction(e -> {
-            String code = courseCodeField.getText();
-            String name = courseNameField.getText();
-            String description = courseDescField.getText();
+        courseTable.getColumns().addAll(Arrays.asList(codeCol, nameCol, descriptionCol, teacherCol));
 
-            if (code.isEmpty() || name.isEmpty()) {
-                showAlert("Error", "Course code and name are required");
+        // Create enrolled students table
+        TableView<EnrolledStudent> enrolledStudentsTable = new TableView<>();
+        enrolledStudentsTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+
+        TableColumn<EnrolledStudent, String> studentCol = new TableColumn<>("Student");
+        studentCol.setCellValueFactory(new PropertyValueFactory<>("username"));
+
+        TableColumn<EnrolledStudent, String> gradeCol = new TableColumn<>("Grade");
+        gradeCol.setCellValueFactory(new PropertyValueFactory<>("grade"));
+
+        enrolledStudentsTable.getColumns().addAll(Arrays.asList(studentCol, gradeCol));
+
+        // Course selection listener to update enrolled students
+        courseTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+            if (newSelection != null) {
+                loadEnrolledStudents(enrolledStudentsTable, newSelection.getCode());
+            }
+        });
+
+        // Enroll student button action
+        enrollStudentBtn.setOnAction(e -> {
+            Course selectedCourse = courseTable.getSelectionModel().getSelectedItem();
+            String selectedStudent = studentComboBox.getValue();
+
+            if (selectedCourse == null || selectedStudent == null) {
+                showAlert("Error", "Please select both a course and a student");
                 return;
             }
 
             try (Connection conn = DatabaseConnection.getConnection()) {
-                // Check if course code already exists
+                // Check if student is already enrolled
                 PreparedStatement checkStmt = conn.prepareStatement(
-                    "SELECT code FROM courses WHERE code = ?"
+                    "SELECT 1 FROM student_courses sc " +
+                    "JOIN users u ON sc.student_id = u.id " +
+                    "WHERE u.username = ? AND sc.course_code = ?"
                 );
-                checkStmt.setString(1, code);
+                checkStmt.setString(1, selectedStudent);
+                checkStmt.setString(2, selectedCourse.getCode());
                 ResultSet rs = checkStmt.executeQuery();
 
                 if (rs.next()) {
-                    showAlert("Error", "Course code already exists");
+                    showAlert("Error", "Student is already enrolled in this course");
                     return;
                 }
 
-                // Insert new course
-                PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO courses (code, name, description) VALUES (?, ?, ?)"
+                // Enroll the student
+                PreparedStatement enrollStmt = conn.prepareStatement(
+                    "INSERT INTO student_courses (student_id, course_code) " +
+                    "SELECT u.id, ? FROM users u WHERE u.username = ?"
                 );
-                stmt.setString(1, code);
-                stmt.setString(2, name);
-                stmt.setString(3, description);
-                stmt.executeUpdate();
+                enrollStmt.setString(1, selectedCourse.getCode());
+                enrollStmt.setString(2, selectedStudent);
+                enrollStmt.executeUpdate();
 
-                loadCourses();
-                clearCourseFields();
+                showAlert("Success", "Student enrolled successfully");
+                loadEnrolledStudents(enrolledStudentsTable, selectedCourse.getCode());
+                loadAvailableStudents(studentComboBox); // Refresh available students
             } catch (SQLException ex) {
-                showAlert("Error", "Failed to add course: " + ex.getMessage());
+                showAlert("Error", "Failed to enroll student: " + ex.getMessage());
             }
         });
 
-        // Edit course button action
-        editCourseBtn.setOnAction(e -> {
-            Course selectedCourse = courseTable.getSelectionModel().getSelectedItem();
-            if (selectedCourse == null) {
-                showAlert("Error", "Please select a course to edit");
-                return;
-            }
-
-            String newCode = courseCodeField.getText();
-            String newName = courseNameField.getText();
-            String newDesc = courseDescField.getText();
-
-            if (newCode.isEmpty() || newName.isEmpty()) {
-                showAlert("Error", "Course code and name are required");
-                return;
-            }
-
-            try (Connection conn = DatabaseConnection.getConnection()) {
-                PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE courses SET code = ?, name = ?, description = ? WHERE code = ?"
-                );
-                stmt.setString(1, newCode);
-                stmt.setString(2, newName);
-                stmt.setString(3, newDesc);
-                stmt.setString(4, selectedCourse.getCode());
-                stmt.executeUpdate();
-
-                loadCourses();
-                clearCourseFields();
-            } catch (SQLException ex) {
-                showAlert("Error", "Failed to update course: " + ex.getMessage());
-            }
-        });
-
-        // Delete course button action
-        deleteCourseBtn.setOnAction(e -> {
-            Course selectedCourse = courseTable.getSelectionModel().getSelectedItem();
-            if (selectedCourse == null) {
-                showAlert("Error", "Please select a course to delete");
-                return;
-            }
-
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Confirm Delete");
-            alert.setHeaderText("Delete Course");
-            alert.setContentText("Are you sure you want to delete course: " + selectedCourse.getCode() + "?");
-
-            Optional<ButtonType> result = alert.showAndWait();
-            if (result.isPresent() && result.get() == ButtonType.OK) {
-                try (Connection conn = DatabaseConnection.getConnection()) {
-                    PreparedStatement stmt = conn.prepareStatement(
-                        "DELETE FROM courses WHERE code = ?"
-                    );
-                    stmt.setString(1, selectedCourse.getCode());
-                    stmt.executeUpdate();
-
-                    loadCourses();
-                    clearCourseFields();
-                } catch (SQLException ex) {
-                    showAlert("Error", "Failed to delete course: " + ex.getMessage());
-                }
-            }
-        });
-
-        // Course table selection listener
-        courseTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            if (newSelection != null) {
-                courseCodeField.setText(newSelection.getCode());
-                courseNameField.setText(newSelection.getName());
-                courseDescField.setText(newSelection.getDescription());
-            }
-        });
-
+        // Add all components to the content
         content.getChildren().addAll(
             new Label("Course Management"),
             new Label("Course Code:"),
@@ -385,12 +359,63 @@ public class AdminDashboardView extends BaseDashboardView {
             courseNameField,
             new Label("Description:"),
             courseDescField,
+            new Label("Assign Teacher:"),
+            teacherComboBox,
             buttonBox,
-            courseTable
+            new Label("Course List"),
+            courseTable,
+            enrollmentLabel,
+            new Label("Select Student:"),
+            studentComboBox,
+            enrollStudentBtn,
+            new Label("Enrolled Students"),
+            enrolledStudentsTable
         );
 
         loadCourses();
         setContent(content);
+    }
+
+    private void loadTeachers() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(
+                "SELECT username FROM users WHERE role = 'Teacher' ORDER BY username"
+            );
+            ResultSet rs = stmt.executeQuery();
+
+            ObservableList<String> teachers = FXCollections.observableArrayList();
+            while (rs.next()) {
+                teachers.add(rs.getString("username"));
+            }
+            teacherComboBox.setItems(teachers);
+        } catch (SQLException e) {
+            showAlert("Error", "Failed to load teachers: " + e.getMessage());
+        }
+    }
+
+    private void loadCourses() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(
+                "SELECT c.code, c.name, c.description, u.username as teacher " +
+                "FROM courses c " +
+                "LEFT JOIN teacher_courses tc ON c.code = tc.course_code " +
+                "LEFT JOIN users u ON tc.teacher_id = u.id"
+            );
+            ResultSet rs = stmt.executeQuery();
+
+            ObservableList<Course> courses = FXCollections.observableArrayList();
+            while (rs.next()) {
+                courses.add(new Course(
+                    rs.getString("code"),
+                    rs.getString("name"),
+                    rs.getString("description"),
+                    rs.getString("teacher")
+                ));
+            }
+            courseTable.setItems(courses);
+        } catch (SQLException e) {
+            showAlert("Error", "Failed to load courses: " + e.getMessage());
+        }
     }
 
     private void loadUsers() {
@@ -413,27 +438,6 @@ public class AdminDashboardView extends BaseDashboardView {
         }
     }
 
-    private void loadCourses() {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            PreparedStatement stmt = conn.prepareStatement(
-                "SELECT code, name, description FROM courses"
-            );
-            ResultSet rs = stmt.executeQuery();
-
-            ObservableList<Course> courses = FXCollections.observableArrayList();
-            while (rs.next()) {
-                courses.add(new Course(
-                    rs.getString("code"),
-                    rs.getString("name"),
-                    rs.getString("description")
-                ));
-            }
-            courseTable.setItems(courses);
-        } catch (SQLException e) {
-            showAlert("Error", "Failed to load courses: " + e.getMessage());
-        }
-    }
-
     private void clearUserFields() {
         usernameField.clear();
         passwordField.clear();
@@ -444,6 +448,7 @@ public class AdminDashboardView extends BaseDashboardView {
         courseCodeField.clear();
         courseNameField.clear();
         courseDescField.clear();
+        teacherComboBox.setValue(null);
     }
 
     private void showAlert(String title, String content) {
@@ -452,6 +457,46 @@ public class AdminDashboardView extends BaseDashboardView {
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    private void loadAvailableStudents(ComboBox<String> studentComboBox) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(
+                "SELECT username FROM users WHERE role = 'Student' ORDER BY username"
+            );
+            ResultSet rs = stmt.executeQuery();
+
+            ObservableList<String> students = FXCollections.observableArrayList();
+            while (rs.next()) {
+                students.add(rs.getString("username"));
+            }
+            studentComboBox.setItems(students);
+        } catch (SQLException e) {
+            showAlert("Error", "Failed to load students: " + e.getMessage());
+        }
+    }
+
+    private void loadEnrolledStudents(TableView<EnrolledStudent> table, String courseCode) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(
+                "SELECT u.username, sc.grade FROM users u " +
+                "JOIN student_courses sc ON u.id = sc.student_id " +
+                "WHERE sc.course_code = ? ORDER BY u.username"
+            );
+            stmt.setString(1, courseCode);
+            ResultSet rs = stmt.executeQuery();
+
+            ObservableList<EnrolledStudent> students = FXCollections.observableArrayList();
+            while (rs.next()) {
+                students.add(new EnrolledStudent(
+                    rs.getString("username"),
+                    rs.getString("grade")
+                ));
+            }
+            table.setItems(students);
+        } catch (SQLException e) {
+            showAlert("Error", "Failed to load enrolled students: " + e.getMessage());
+        }
     }
 
     // Data classes
@@ -472,15 +517,31 @@ public class AdminDashboardView extends BaseDashboardView {
         private final String code;
         private final String name;
         private final String description;
+        private final String teacher;
 
-        public Course(String code, String name, String description) {
+        public Course(String code, String name, String description, String teacher) {
             this.code = code;
             this.name = name;
             this.description = description;
+            this.teacher = teacher;
         }
 
         public String getCode() { return code; }
         public String getName() { return name; }
         public String getDescription() { return description; }
+        public String getTeacher() { return teacher; }
+    }
+
+    public static class EnrolledStudent {
+        private final String username;
+        private final String grade;
+
+        public EnrolledStudent(String username, String grade) {
+            this.username = username;
+            this.grade = grade;
+        }
+
+        public String getUsername() { return username; }
+        public String getGrade() { return grade; }
     }
 }
